@@ -1,0 +1,5 @@
+keyboard
+smtplib
+threading
+datetime
+email
