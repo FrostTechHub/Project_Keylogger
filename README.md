@@ -4,6 +4,5 @@
 
 
  Things to do:
- [+]    Change print statement to logging statements
  [+]    Build this code into an executable using Pyinstaller
 
